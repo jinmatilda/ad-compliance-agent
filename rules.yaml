@@ -1,0 +1,11 @@
+rules:
+  - {rule_id: A-01, name: 绝对化用语, level: 中, matcher: 词库+正则+LLM补充, manual: true, suggestion: 删除绝对化表述，或补充可核验的限定范围与依据。}
+  - {rule_id: A-02, name: 数据宣传, level: 中, matcher: 数字+来源+口径+时间范围, manual: true, suggestion: 同时注明数据来源、统计口径和时间范围。}
+  - {rule_id: A-03, name: 优惠有效期, level: 中, matcher: 优惠词+起止日期, manual: true, suggestion: 显著写明优惠开始和结束日期。}
+  - {rule_id: A-04, name: 优惠限制, level: 中, matcher: 优惠词+适用条件共现, manual: true, suggestion: 披露适用商品、渠道、名额及叠加限制等主要条件。}
+  - {rule_id: A-05, name: 效果承诺, level: 高, matcher: 词库候选+LLM语义, manual: true, suggestion: 改为有证据支持的客观描述，并提交验证材料人工复核。}
+  - {rule_id: A-06, name: 敏感词, level: 高, matcher: 词库精确匹配, manual: true, suggestion: 删除敏感承诺并交由人工审核。}
+  - {rule_id: A-07, name: 对比贬损, level: 高, matcher: 对比候选+LLM语义, manual: true, suggestion: 删除贬损或全面优越表述；限定比较范围并提供依据。}
+  - {rule_id: A-08, name: 免费/零元, level: 高, matcher: 免费词+费用共现, manual: true, suggestion: 在免费或零元表述旁显著披露押金、运费、自动续费等必要费用。}
+  - {rule_id: A-09, name: 背书评价, level: 中, matcher: 背书候选+LLM语义, manual: true, suggestion: 补充评价真实性、授权及可核验材料并转人工审核。}
+  - {rule_id: A-10, name: 证据不足, level: 中, matcher: OCR置信度+模糊度+完整性, manual: true, suggestion: 提供清晰原文件或完整页面后重新检查。}

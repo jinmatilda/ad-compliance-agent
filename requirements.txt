@@ -1,0 +1,8 @@
+streamlit>=1.40,<2
+openai>=1.55,<3
+pytesseract>=0.3.13,<0.4
+Pillow>=10.4,<13
+PyYAML>=6.0,<7
+jsonschema>=4.23,<5
+numpy>=1.26,<3
+
