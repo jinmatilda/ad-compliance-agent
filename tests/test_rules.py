@@ -5,7 +5,7 @@ from unittest.mock import patch
 from PIL import Image
 
 from adcheck.engine import analyze
-from adcheck.exporters import to_json, to_markdown
+from adcheck.exporters import to_docx, to_json, to_markdown
 from adcheck.rules import load_rules
 from adcheck.ocr import extract_image
 
@@ -48,6 +48,9 @@ class RuleTests(unittest.TestCase):
         self.assertTrue(required <= report.findings[0].to_dict().keys())
         self.assertIn('"风险项"', to_json(report))
         self.assertIn("广告宣传材料合规初筛报告", to_markdown(report))
+        docx = to_docx(report)
+        self.assertTrue(docx.startswith(b"PK"))
+        self.assertGreater(len(docx), 1000)
 
     def test_blurry_image_quality_signal_without_real_tesseract(self):
         buf = BytesIO()
