@@ -1,6 +1,6 @@
 # 广告宣传材料合规检查助手
 
-一个可部署到 Streamlit Community Cloud 的中文广告发布前初筛 Agent。支持输入文字、海报图片和活动页截图；图片由 Tesseract OCR 处理。系统使用题目给定的 A-01～A-10 规则进行确定性检查，并在配置 OpenAI API Key 后补充语义审查。结果只作第一轮提示，不构成法律意见。
+一个可部署到 Streamlit Community Cloud 的中文广告发布前初筛 Agent。支持输入文字、海报图片和活动页截图；图片由 Tesseract OCR 提取原文，并由火山方舟多模态模型补充视觉与语义审查。系统使用题目给定的 A-01～A-10 规则进行确定性检查。结果只作第一轮提示，不构成法律意见。
 
 ## 支持的输入与输出
 
@@ -26,33 +26,45 @@ streamlit run app.py
 本地语义审查需创建不会提交到 Git 的 `.streamlit/secrets.toml`：
 
 ```toml
-OPENAI_API_KEY = "sk-..."
-OPENAI_MODEL = "gpt-4.1-mini"
+ARK_API_KEY = "你的火山方舟 API Key"
+ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+ARK_MODEL = "doubao-seed-2-0-lite-260215"
 ```
 
 可从 `.streamlit/secrets.toml.example` 复制。没有 Key 时，确定性规则仍运行，A-05、A-07、A-09 会明确降级为人工审核。
 
 ## Streamlit Community Cloud 部署
 
-需要自己的 GitHub 账号、Streamlit Community Cloud 账号和 OpenAI API Key。ChatGPT 订阅不等同于 API Key。
+需要自己的 GitHub 账号、Streamlit Community Cloud 账号和火山方舟 API Key。
 
 1. 在 GitHub 新建仓库，把本目录代码提交并推送；确认 `.streamlit/secrets.toml` 没有进入提交。
 2. 使用 GitHub 账号登录 [share.streamlit.io](https://share.streamlit.io)。
 3. 点击 **Create app**，选择 **Yup, I have an app**。
 4. 填写 GitHub repository、branch（通常为 `main`）和 Main file path：`app.py`。
-5. 打开 **Advanced settings**，在 Secrets 中填写 `OPENAI_API_KEY` 和可选的 `OPENAI_MODEL`，不要把 Key 写进仓库。
+5. 打开 **Advanced settings**，在 Secrets 中填写 `ARK_API_KEY`、`ARK_BASE_URL` 和 `ARK_MODEL`，不要把 Key 写进仓库。
 6. 在 App URL 中选择尚未被占用的固定子域名。
 7. 点击 **Deploy**，等待构建完成；`requirements.txt` 安装 Python 包，`packages.txt` 安装 Tesseract 和中文语言包。
 8. 在无登录浏览器窗口上传新图片并检查导出，确认远程访客可用。
 
 部署后的固定地址形式为：[https://你的子域名.streamlit.app/](https://你的子域名.streamlit.app/)。Mac 关机不影响云端应用。免费平台可能休眠，首次打开会有冷启动时间。
 
-## OpenAI 后台操作
+## 火山方舟后台操作
 
-1. 登录 [OpenAI API Platform](https://platform.openai.com/)。
-2. 在项目中创建 API Key，并确保项目有可用额度。
-3. 只把 Key 粘贴到 Streamlit Cloud 的 **Advanced settings → Secrets**。
-4. 如需换模型，在 Secrets 设置 `OPENAI_MODEL`；默认 `gpt-4.1-mini`。
+1. 登录火山方舟控制台，开通支持视觉理解的模型，例如 Doubao-Seed-2.0-lite。
+2. 创建 API Key，并确保账户有可用额度。
+3. 从模型详情或 API 示例复制当前完整模型 ID；模型版本更新时，以控制台显示为准。
+4. 只把 Key 粘贴到 Streamlit Cloud 的 **Advanced settings → Secrets**。
+5. 如需换模型，在 Secrets 设置 `ARK_MODEL`。
+
+Streamlit Secrets 示例：
+
+```toml
+ARK_API_KEY = "你的火山方舟 API Key"
+ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+ARK_MODEL = "控制台显示的完整模型 ID"
+```
+
+图片会同时进入两条链路：Tesseract OCR 用于可追溯原文、置信度和 A-10；火山方舟多模态模型读取原图并补充 A-01、A-05、A-07、A-09。模型不能撤销确定性规则命中，也不能在 A-10 证据不足时给出完整合规结论。
 
 ## A-01～A-10 演示样例
 

@@ -42,6 +42,33 @@ class RuleTests(unittest.TestCase):
         report = analyze("普通文案")
         self.assertEqual(report.semantic_status, "降级")
         self.assertTrue({"A-05", "A-07", "A-09"} <= {x.rule_id for x in report.findings})
+
+    @patch("adcheck.engine.review")
+    def test_ark_configuration_and_image_are_forwarded(self, mock_review):
+        mock_review.return_value = [{
+            "rule_id": "A-05",
+            "quote": "图片中的效果承诺",
+            "reason": "图片中出现未经验证的确定效果承诺",
+            "confidence": "中",
+        }]
+        image = (b"fake-image", "image/png")
+        report = analyze(
+            "OCR文字",
+            api_key="ark-test-key",
+            model="doubao-test-model",
+            base_url="https://ark.example/api/v3",
+            semantic_images=[image],
+        )
+        mock_review.assert_called_once_with(
+            "OCR文字",
+            "ark-test-key",
+            "doubao-test-model",
+            base_url="https://ark.example/api/v3",
+            images=[image],
+        )
+        self.assertEqual(report.semantic_status, "完成")
+        finding = next(x for x in report.findings if x.quote == "图片中的效果承诺")
+        self.assertEqual(finding.source, "图片语义审查")
     def test_output_fields_and_exports(self):
         report = analyze("全网最低")
         required = {"风险内容原文", "风险类型", "对应规则", "风险等级", "修改建议", "是否需要人工审核"}

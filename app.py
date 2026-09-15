@@ -52,14 +52,16 @@ hr { border-color: #d8e3e8; }
     unsafe_allow_html=True,
 )
 
-try:
-    api_key = st.secrets["OPENAI_API_KEY"]
-except (KeyError, FileNotFoundError):
-    api_key = os.getenv("OPENAI_API_KEY", "")
-try:
-    model = st.secrets.get("OPENAI_MODEL", "gpt-4.1-mini")
-except FileNotFoundError:
-    model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+def config_value(name: str, default: str = "") -> str:
+    try:
+        return str(st.secrets.get(name, os.getenv(name, default)))
+    except FileNotFoundError:
+        return os.getenv(name, default)
+
+
+api_key = config_value("ARK_API_KEY")
+base_url = config_value("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
+model = config_value("ARK_MODEL", "doubao-seed-2-0-lite-260215")
 
 if "report" not in st.session_state:
     st.session_state.report = None
@@ -88,8 +90,8 @@ with st.sidebar:
             st.markdown(f"**默认等级**　{rule['level']}")
             st.markdown(rule["suggestion"])
 
-if not api_key or api_key == "sk-...":
-    st.warning("⚠️ 未配置 API Key，语义审查降级：A-05、A-07、A-09 将标记为需人工审核；确定性规则仍正常运行。")
+if not api_key or api_key in {"sk-...", "your-ark-api-key"}:
+    st.warning("⚠️ 未配置火山方舟 API Key，语义审查降级：A-05、A-07、A-09 将标记为需人工审核；确定性规则仍正常运行。")
 
 st.markdown(
     '<div class="section-card"><div class="section-title">01｜提交检查材料</div>'
@@ -122,14 +124,17 @@ if st.button("🔍 开始检查", type="primary", use_container_width=True):
     elif not text.strip() and not uploads:
         st.error("请至少输入文字或上传一张图片。")
     else:
-        ocr_parts, reasons, confidences = [], [], []
+        ocr_parts, reasons, confidences, semantic_images = [], [], [], []
         for upload in uploads:
             if upload.size > 10 * 1024 * 1024:
                 reasons.append(f"{upload.name} 超过 10 MB，未处理")
                 continue
             try:
-                result = extract_image(upload.getvalue())
+                raw_image = upload.getvalue()
+                result = extract_image(raw_image)
                 ocr_parts.append(f"[{upload.name}]\n{result.text}")
+                mime_type = upload.type if upload.type in {"image/png", "image/jpeg"} else "image/jpeg"
+                semantic_images.append((raw_image, mime_type))
                 reasons.extend(f"{upload.name}：{reason}" for reason in result.reasons)
                 if result.confidence is not None:
                     confidences.append(result.confidence)
@@ -148,6 +153,8 @@ if st.button("🔍 开始检查", type="primary", use_container_width=True):
                     combined,
                     api_key=api_key or None,
                     model=model,
+                    base_url=base_url,
+                    semantic_images=semantic_images,
                     a10_reasons=reasons,
                     ocr_text=ocr_text,
                     ocr_confidence=average,

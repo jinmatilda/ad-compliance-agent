@@ -37,7 +37,10 @@ def _matches(pattern: re.Pattern[str], text: str) -> Iterable[str]:
     return dict.fromkeys(m.group(0) for m in pattern.finditer(text))
 
 
-def analyze(text: str, *, api_key: str | None = None, model: str = "gpt-4.1-mini",
+def analyze(text: str, *, api_key: str | None = None,
+            model: str = "doubao-seed-2-0-lite-260215",
+            base_url: str | None = "https://ark.cn-beijing.volces.com/api/v3",
+            semantic_images: list[tuple[bytes, str]] | None = None,
             a10_reasons: list[str] | None = None, ocr_text: str = "",
             ocr_confidence: float | None = None) -> Report:
     rules = load_rules()
@@ -90,13 +93,20 @@ def analyze(text: str, *, api_key: str | None = None, model: str = "gpt-4.1-mini
 
     if api_key:
         try:
-            semantic = review(text, api_key, model)
+            semantic = review(
+                text,
+                api_key,
+                model,
+                base_url=base_url,
+                images=semantic_images,
+            )
             for item in semantic:
                 rid, quote = item["rule_id"], item["quote"]
-                if quote and quote in text:
-                    add(rid, quote, item["reason"], item["confidence"], "待核实")
+                if quote and (quote in text or semantic_images):
+                    source = "图片语义审查" if quote not in text else "输入文本"
+                    add(rid, quote, item["reason"], item["confidence"], "待核实", source)
             semantic_status = "完成"
-            semantic_message = "OpenAI 语义审查已完成；确定性规则命中不会被撤销。"
+            semantic_message = "火山方舟语义与视觉审查已完成；确定性规则命中不会被撤销。"
         except Exception as exc:
             semantic_status = "降级"
             semantic_message = f"语义审查调用失败，A-05/A-07/A-09 转人工：{type(exc).__name__}"
